@@ -15,9 +15,8 @@ EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD")    # La contraseña de 16 cara
 EMAIL_DESTINATARIO = os.environ.get("EMAIL_DESTINATARIO") # Tu correo donde quieres recibirlo
 
 def obtener_fecha_chile():
-    """Calcula la fecha actual en Chile (UTC-4) de forma segura en cualquier servidor."""
+    """Calcula la fecha actual en Chile (UTC-4) de forma segura."""
     utc_now = datetime.utcnow()
-    # Chile continental actualmente está en UTC-4 (Horario estándar/verano según corresponda)
     chile_now = utc_now - timedelta(hours=4)
     return chile_now
 
@@ -74,8 +73,8 @@ def verificar_racha_local(home_id):
 def escanear_con_variedad_total():
     oportunidades = []
     
-    # Obtener fecha actual en Chile de forma segura
     hoy_chile = obtener_fecha_chile().date()
+    print(f"📅 Fecha base calculada para Chile: {hoy_chile}")
     
     estados_excluidos = ["FT", "AET", "PEN", "ET", "PST", "CANC", "ABD", "AWD", "WO", "LIVE", "1H", "2H", "HT"]
     
@@ -94,15 +93,16 @@ def escanear_con_variedad_total():
         {"mercado": "Doble Oportunidad (Local o Empate)", "prob": 0.72, "cuota": 1.55}
     ]
     
-    # Bucle para hoy y mañana
     for d in range(2):
         fecha_actual = hoy_chile + timedelta(days=d)
         fecha_str = fecha_actual.strftime("%Y-%m-%d")
+        print(f"🔍 Consultando cartelera para la fecha: {fecha_str}")
         
         try:
             res = requests.get("https://v3.football.api-sports.io/fixtures", headers=HEADERS, params={"date": fecha_str})
             if res.status_code == 200:
                 data = res.json().get("response", [])
+                print(f"    partidos encontrados en API para {fecha_str}: {len(data)}")
                 
                 partidos_filtrados = [
                     p for p in data 
@@ -159,7 +159,7 @@ def escanear_con_variedad_total():
                             "Bankroll (%)": round(stake_pct * 100, 2)
                         })
         except Exception as e:
-            print(f"Error en fecha {fecha_str}: {e}")
+            print(f"❌ Error en fecha {fecha_str}: {e}")
             pass
             
     return oportunidades
@@ -176,14 +176,12 @@ def enviar_correo(archivo_excel):
     msg['To'] = EMAIL_DESTINATARIO
     msg.set_content("Hola Cristian,\n\nAdjunto encontrarás el archivo Excel con las sugerencias de apuestas optimizadas y analizadas para hoy.\n\n¡Mucho éxito!")
 
-    # Adjuntar el archivo Excel
     with open(archivo_excel, 'rb') as f:
         file_data = f.read()
         file_name = os.path.basename(archivo_excel)
     
     msg.add_attachment(file_data, maintype='application', subtype='vnd.openxmlformats-officedocument.spreadsheetml.sheet', filename=file_name)
 
-    # Conexión con el servidor SMTP de Gmail
     try:
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
             smtp.login(EMAIL_EMISOR, EMAIL_PASSWORD)
@@ -200,8 +198,6 @@ if __name__ == "__main__":
         excel_name = "apuestas_variedad_dinamica.xlsx"
         df = pd.DataFrame(top_resultados)
         df.to_excel(excel_name, index=False)
-        
-        # Enviar por correo
         enviar_correo(excel_name)
     else:
         print("ℹ️ No se generaron apuestas en este ciclo.")
