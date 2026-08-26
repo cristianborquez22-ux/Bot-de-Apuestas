@@ -1,6 +1,5 @@
 import requests
 from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
 import pandas as pd
 import os
 import smtplib
@@ -14,6 +13,13 @@ BANKROLL_TOTAL = 100000
 EMAIL_EMISOR = os.environ.get("EMAIL_EMISOR")        # Tu correo de Gmail
 EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD")    # La contraseña de 16 caracteres de Google
 EMAIL_DESTINATARIO = os.environ.get("EMAIL_DESTINATARIO") # Tu correo donde quieres recibirlo
+
+def obtener_fecha_chile():
+    """Calcula la fecha actual en Chile (UTC-4) de forma segura en cualquier servidor."""
+    utc_now = datetime.utcnow()
+    # Chile continental actualmente está en UTC-4 (Horario estándar/verano según corresponda)
+    chile_now = utc_now - timedelta(hours=4)
+    return chile_now
 
 def calcular_kelly(prob, cuota):
     q = 1.0 - prob
@@ -68,8 +74,8 @@ def verificar_racha_local(home_id):
 def escanear_con_variedad_total():
     oportunidades = []
     
-    # Obtener estrictamente la fecha de hoy en Chile
-    hoy_chile = datetime.now(ZoneInfo("America/Santiago")).date()
+    # Obtener fecha actual en Chile de forma segura
+    hoy_chile = obtener_fecha_chile().date()
     
     estados_excluidos = ["FT", "AET", "PEN", "ET", "PST", "CANC", "ABD", "AWD", "WO", "LIVE", "1H", "2H", "HT"]
     
@@ -88,7 +94,7 @@ def escanear_con_variedad_total():
         {"mercado": "Doble Oportunidad (Local o Empate)", "prob": 0.72, "cuota": 1.55}
     ]
     
-    # Bucle para hoy y mañana basados en la hora de Chile
+    # Bucle para hoy y mañana
     for d in range(2):
         fecha_actual = hoy_chile + timedelta(days=d)
         fecha_str = fecha_actual.strftime("%Y-%m-%d")
@@ -139,7 +145,7 @@ def escanear_con_variedad_total():
                     if ev >= 0.03:
                         stake_pct = calcular_kelly(prob, cuota)
                         oportunidades.append({
-                            "Timestamp_Ejecucion": datetime.now(ZoneInfo("America/Santiago")).strftime("%Y-%m-%d %H:%M:%S"),
+                            "Timestamp_Ejecucion": obtener_fecha_chile().strftime("%Y-%m-%d %H:%M:%S"),
                             "Liga": f"{league.get('country', 'Global')} - {league.get('name', 'Fútbol')}",
                             "Fecha_Partido": fecha_str,
                             "Partido": f"{home_name} vs {away_name}",
@@ -152,7 +158,8 @@ def escanear_con_variedad_total():
                             "Stake ($)": round(BANKROLL_TOTAL * stake_pct, 0),
                             "Bankroll (%)": round(stake_pct * 100, 2)
                         })
-        except:
+        except Exception as e:
+            print(f"Error en fecha {fecha_str}: {e}")
             pass
             
     return oportunidades
@@ -164,7 +171,7 @@ def enviar_correo(archivo_excel):
         return
 
     msg = EmailMessage()
-    msg['Subject'] = f"📊 Reporte Diario de Apuestas - {datetime.now(ZoneInfo('America/Santiago')).strftime('%Y-%m-%d')}"
+    msg['Subject'] = f"📊 Reporte Diario de Apuestas - {obtener_fecha_chile().strftime('%Y-%m-%d')}"
     msg['From'] = EMAIL_EMISOR
     msg['To'] = EMAIL_DESTINATARIO
     msg.set_content("Hola Cristian,\n\nAdjunto encontrarás el archivo Excel con las sugerencias de apuestas optimizadas y analizadas para hoy.\n\n¡Mucho éxito!")
