@@ -14,12 +14,6 @@ EMAIL_EMISOR = os.environ.get("EMAIL_EMISOR")        # Tu correo de Gmail
 EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD")    # La contraseña de 16 caracteres de Google
 EMAIL_DESTINATARIO = os.environ.get("EMAIL_DESTINATARIO") # Tu correo donde quieres recibirlo
 
-def obtener_fecha_chile():
-    """Calcula la fecha actual en Chile (UTC-4) de forma segura."""
-    utc_now = datetime.utcnow()
-    chile_now = utc_now - timedelta(hours=4)
-    return chile_now
-
 def calcular_kelly(prob, cuota):
     q = 1.0 - prob
     b = cuota - 1.0
@@ -72,10 +66,7 @@ def verificar_racha_local(home_id):
 
 def escanear_con_variedad_total():
     oportunidades = []
-    
-    hoy_chile = obtener_fecha_chile().date()
-    print(f"📅 Fecha base calculada para Chile: {hoy_chile}")
-    
+    hoy = datetime.now()
     estados_excluidos = ["FT", "AET", "PEN", "ET", "PST", "CANC", "ABD", "AWD", "WO", "LIVE", "1H", "2H", "HT"]
     
     terminos_excluidos = [
@@ -93,17 +84,12 @@ def escanear_con_variedad_total():
         {"mercado": "Doble Oportunidad (Local o Empate)", "prob": 0.72, "cuota": 1.55}
     ]
     
-    # Buscamos en los próximos días (empezando desde mañana d=1 hasta d=3 para asegurar partidos futuros)
-    for d in range(1, 4):
-        fecha_actual = hoy_chile + timedelta(days=d)
-        fecha_str = fecha_actual.strftime("%Y-%m-%d")
-        print(f"🔍 Consultando cartelera para la fecha futura: {fecha_str}")
-        
+    for d in range(2):
+        fecha_str = (hoy + timedelta(days=d)).strftime("%Y-%m-%d")
         try:
             res = requests.get("https://v3.football.api-sports.io/fixtures", headers=HEADERS, params={"date": fecha_str})
             if res.status_code == 200:
                 data = res.json().get("response", [])
-                print(f"    Partidos encontrados en API para {fecha_str}: {len(data)}")
                 
                 partidos_filtrados = [
                     p for p in data 
@@ -146,7 +132,7 @@ def escanear_con_variedad_total():
                     if ev >= 0.03:
                         stake_pct = calcular_kelly(prob, cuota)
                         oportunidades.append({
-                            "Timestamp_Ejecucion": obtener_fecha_chile().strftime("%Y-%m-%d %H:%M:%S"),
+                            "Timestamp_Ejecucion": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                             "Liga": f"{league.get('country', 'Global')} - {league.get('name', 'Fútbol')}",
                             "Fecha_Partido": fecha_str,
                             "Partido": f"{home_name} vs {away_name}",
@@ -159,8 +145,7 @@ def escanear_con_variedad_total():
                             "Stake ($)": round(BANKROLL_TOTAL * stake_pct, 0),
                             "Bankroll (%)": round(stake_pct * 100, 2)
                         })
-        except Exception as e:
-            print(f"❌ Error en fecha {fecha_str}: {e}")
+        except:
             pass
             
     return oportunidades
@@ -172,10 +157,10 @@ def enviar_correo(archivo_excel):
         return
 
     msg = EmailMessage()
-    msg['Subject'] = f"📊 Reporte Diario de Apuestas - {obtener_fecha_chile().strftime('%Y-%m-%d')}"
+    msg['Subject'] = f"📊 Reporte Diario de Apuestas - {datetime.now().strftime('%Y-%m-%d')}"
     msg['From'] = EMAIL_EMISOR
     msg['To'] = EMAIL_DESTINATARIO
-    msg.set_content("Hola Cristian,\n\nAdjunto encontrarás el archivo Excel con las sugerencias de apuestas optimizadas y analizadas para los próximos partidos.\n\n¡Mucho éxito!")
+    msg.set_content("Hola Cristian,\n\nAdjunto encontrarás el archivo Excel con las sugerencias de apuestas optimizadas y analizadas para hoy.\n\n¡Mucho éxito!")
 
     with open(archivo_excel, 'rb') as f:
         file_data = f.read()
