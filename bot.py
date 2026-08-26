@@ -1,5 +1,5 @@
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, ZoneInfo
 import pandas as pd
 import os
 import smtplib
@@ -8,7 +8,8 @@ from email.message import EmailMessage
 API_KEY = "3402c9adb149b64e7d4c4a4c70d0ceed"
 HEADERS = {"x-apisports-key": API_KEY}
 BANKROLL_TOTAL = 100000
-
+# Fecha actual forzada a la hora de Chile
+HOY_CHILE = datetime.now(ZoneInfo("America/Santiago")).strftime("%Y-%m-%d")
 # CONFIGURACIÓN DE CORREO (Se llenará con los secretos de GitHub)
 EMAIL_EMISOR = os.environ.get("EMAIL_EMISOR")       # Tu correo de Gmail
 EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD")   # La contraseña de 16 caracteres de Google
