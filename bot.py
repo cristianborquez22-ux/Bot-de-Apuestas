@@ -1,5 +1,6 @@
 import requests
-from datetime import datetime, timedelta, ZoneInfo
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 import pandas as pd
 import os
 import smtplib
@@ -8,11 +9,13 @@ from email.message import EmailMessage
 API_KEY = "3402c9adb149b64e7d4c4a4c70d0ceed"
 HEADERS = {"x-apisports-key": API_KEY}
 BANKROLL_TOTAL = 100000
+
 # Fecha actual forzada a la hora de Chile
 HOY_CHILE = datetime.now(ZoneInfo("America/Santiago")).strftime("%Y-%m-%d")
+
 # CONFIGURACIÓN DE CORREO (Se llenará con los secretos de GitHub)
-EMAIL_EMISOR = os.environ.get("EMAIL_EMISOR")       # Tu correo de Gmail
-EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD")   # La contraseña de 16 caracteres de Google
+EMAIL_EMISOR = os.environ.get("EMAIL_EMISOR")        # Tu correo de Gmail
+EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD")    # La contraseña de 16 caracteres de Google
 EMAIL_DESTINATARIO = os.environ.get("EMAIL_DESTINATARIO") # Tu correo donde quieres recibirlo
 
 def calcular_kelly(prob, cuota):
@@ -67,7 +70,7 @@ def verificar_racha_local(home_id):
 
 def escanear_con_variedad_total():
     oportunidades = []
-    hoy = datetime.now()
+    hoy_dt = datetime.now(ZoneInfo("America/Santiago"))
     estados_excluidos = ["FT", "AET", "PEN", "ET", "PST", "CANC", "ABD", "AWD", "WO", "LIVE", "1H", "2H", "HT"]
     
     terminos_excluidos = [
@@ -86,7 +89,7 @@ def escanear_con_variedad_total():
     ]
     
     for d in range(2):
-        fecha_str = (hoy + timedelta(days=d)).strftime("%Y-%m-%d")
+        fecha_str = (hoy_dt + timedelta(days=d)).strftime("%Y-%m-%d")
         try:
             res = requests.get("https://v3.football.api-sports.io/fixtures", headers=HEADERS, params={"date": fecha_str})
             if res.status_code == 200:
@@ -133,7 +136,7 @@ def escanear_con_variedad_total():
                     if ev >= 0.03:
                         stake_pct = calcular_kelly(prob, cuota)
                         oportunidades.append({
-                            "Timestamp_Ejecucion": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                            "Timestamp_Ejecucion": datetime.now(ZoneInfo("America/Santiago")).strftime("%Y-%m-%d %H:%M:%S"),
                             "Liga": f"{league.get('country', 'Global')} - {league.get('name', 'Fútbol')}",
                             "Fecha_Partido": fecha_str,
                             "Partido": f"{home_name} vs {away_name}",
@@ -158,7 +161,7 @@ def enviar_correo(archivo_excel):
         return
 
     msg = EmailMessage()
-    msg['Subject'] = f"📊 Reporte Diario de Apuestas - {datetime.now().strftime('%Y-%m-%d')}"
+    msg['Subject'] = f"📊 Reporte Diario de Apuestas - {datetime.now(ZoneInfo('America/Santiago')).strftime('%Y-%m-%d')}"
     msg['From'] = EMAIL_EMISOR
     msg['To'] = EMAIL_DESTINATARIO
     msg.set_content("Hola Cristian,\n\nAdjunto encontrarás el archivo Excel con las sugerencias de apuestas optimizadas y analizadas para hoy.\n\n¡Mucho éxito!")
