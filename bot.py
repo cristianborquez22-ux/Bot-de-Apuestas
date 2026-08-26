@@ -93,16 +93,17 @@ def escanear_con_variedad_total():
         {"mercado": "Doble Oportunidad (Local o Empate)", "prob": 0.72, "cuota": 1.55}
     ]
     
-    for d in range(2):
+    # Buscamos en los próximos días (empezando desde mañana d=1 hasta d=3 para asegurar partidos futuros)
+    for d in range(1, 4):
         fecha_actual = hoy_chile + timedelta(days=d)
         fecha_str = fecha_actual.strftime("%Y-%m-%d")
-        print(f"🔍 Consultando cartelera para la fecha: {fecha_str}")
+        print(f"🔍 Consultando cartelera para la fecha futura: {fecha_str}")
         
         try:
             res = requests.get("https://v3.football.api-sports.io/fixtures", headers=HEADERS, params={"date": fecha_str})
             if res.status_code == 200:
                 data = res.json().get("response", [])
-                print(f"    partidos encontrados en API para {fecha_str}: {len(data)}")
+                print(f"    Partidos encontrados en API para {fecha_str}: {len(data)}")
                 
                 partidos_filtrados = [
                     p for p in data 
@@ -174,7 +175,7 @@ def enviar_correo(archivo_excel):
     msg['Subject'] = f"📊 Reporte Diario de Apuestas - {obtener_fecha_chile().strftime('%Y-%m-%d')}"
     msg['From'] = EMAIL_EMISOR
     msg['To'] = EMAIL_DESTINATARIO
-    msg.set_content("Hola Cristian,\n\nAdjunto encontrarás el archivo Excel con las sugerencias de apuestas optimizadas y analizadas para hoy.\n\n¡Mucho éxito!")
+    msg.set_content("Hola Cristian,\n\nAdjunto encontrarás el archivo Excel con las sugerencias de apuestas optimizadas y analizadas para los próximos partidos.\n\n¡Mucho éxito!")
 
     with open(archivo_excel, 'rb') as f:
         file_data = f.read()
