@@ -91,13 +91,18 @@ def escanear_con_variedad_total():
             if res.status_code == 200:
                 data = res.json().get("response", [])
                 
+                # 1. FILTRADO PREVIO: Descartamos estados no deseados y ligas excluidas PRIMERO
                 partidos_filtrados = [
                     p for p in data 
                     if p.get("fixture", {}).get("status", {}).get("short", "").upper() not in estados_excluidos
                     and not any(term in p.get("league", {}).get("name", "").lower() for term in terminos_excluidos)
                 ]
                 
-                for idx, p in enumerate(partidos_filtrados[:10]):
+                # 2. LÍMITE OPTIMIZADO: 45 partidos por día (aprovecha al máximo las ~100 consultas diarias gratuitas)
+                MAX_PARTIDOS_A_ANALIZAR = 45
+                partidos_a_procesar = partidos_filtrados[:MAX_PARTIDOS_A_ANALIZAR]
+                
+                for idx, p in enumerate(partidos_a_procesar):
                     fixture_id = p.get("fixture", {}).get("id")
                     league = p.get("league", {})
                     teams = p.get("teams", {})
@@ -177,7 +182,7 @@ def enviar_correo(archivo_excel):
         print(f"❌ Error al enviar el correo: {e}")
 
 if __name__ == "__main__":
-    print("🔄 Ejecutando análisis automatizado...\n")
+    print("🔄 Ejecutando análisis automatizado con aprovechamiento máximo de cuota gratuita...\n")
     top_resultados = escanear_con_variedad_total()
     
     if top_resultados:
