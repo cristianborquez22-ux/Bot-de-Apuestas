@@ -10,9 +10,6 @@ API_KEY = "3402c9adb149b64e7d4c4a4c70d0ceed"
 HEADERS = {"x-apisports-key": API_KEY}
 BANKROLL_TOTAL = 100000
 
-# Fecha actual forzada a la hora de Chile
-HOY_CHILE = datetime.now(ZoneInfo("America/Santiago")).strftime("%Y-%m-%d")
-
 # CONFIGURACIÓN DE CORREO (Se llenará con los secretos de GitHub)
 EMAIL_EMISOR = os.environ.get("EMAIL_EMISOR")        # Tu correo de Gmail
 EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD")    # La contraseña de 16 caracteres de Google
@@ -70,7 +67,10 @@ def verificar_racha_local(home_id):
 
 def escanear_con_variedad_total():
     oportunidades = []
-    hoy_dt = datetime.now(ZoneInfo("America/Santiago"))
+    
+    # Obtener estrictamente la fecha de hoy en Chile
+    hoy_chile = datetime.now(ZoneInfo("America/Santiago")).date()
+    
     estados_excluidos = ["FT", "AET", "PEN", "ET", "PST", "CANC", "ABD", "AWD", "WO", "LIVE", "1H", "2H", "HT"]
     
     terminos_excluidos = [
@@ -88,8 +88,11 @@ def escanear_con_variedad_total():
         {"mercado": "Doble Oportunidad (Local o Empate)", "prob": 0.72, "cuota": 1.55}
     ]
     
+    # Bucle para hoy y mañana basados en la hora de Chile
     for d in range(2):
-        fecha_str = (hoy_dt + timedelta(days=d)).strftime("%Y-%m-%d")
+        fecha_actual = hoy_chile + timedelta(days=d)
+        fecha_str = fecha_actual.strftime("%Y-%m-%d")
+        
         try:
             res = requests.get("https://v3.football.api-sports.io/fixtures", headers=HEADERS, params={"date": fecha_str})
             if res.status_code == 200:
